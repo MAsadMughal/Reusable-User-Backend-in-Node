@@ -6,7 +6,7 @@ const sendJWT = require("../utils/Jwt");
 const crypto = require("crypto");
 const { sendEmail } = require("../utils/sendEmail");
 const ResetToken = require("../model/resetToken");
-const { request } = require("http");
+const GoogleUser = require("../model/GoogleUser");
 
 
 
@@ -14,6 +14,10 @@ exports.createUser = CatchAsyncErrors(async (req, res, next) => {
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
         return next(new ErrorHandler("Enter Complete Information"));
+    }
+    const googleAcc = await GoogleUser.findOne({ email });
+    if (googleAcc) {
+        return next(new ErrorHandler("Sign in with Google as your account is linked with Google."));
     }
     const user = new User({ name, email, password });
     const newUser = await user.save();
@@ -27,6 +31,11 @@ exports.loginUser = CatchAsyncErrors(async (req, res, next) => {
     const { email, password } = req.body;
     if (!email || !password) {
         return next(new ErrorHandler("Enter Complete Information"));
+    }
+
+    const googleAcc = await GoogleUser.findOne({ email });
+    if (googleAcc) {
+        return next(new ErrorHandler("Sign in with Google as your account is linked with Google."));
     }
 
 
@@ -45,6 +54,29 @@ exports.loginUser = CatchAsyncErrors(async (req, res, next) => {
 
     sendJWT(foundUser, req, res);
 
+})
+
+
+exports.googleUser = CatchAsyncErrors(async (req, res, next) => {
+    const { email, imageUrl, name } = req.body;
+    if (!email || !imageUrl || !name) {
+        return next(new ErrorHandler("Enter Complete Information"));
+    }
+
+    //Check If Account Created with Email
+    const foundUser = await User.findOne({ email });
+    if (foundUser) {
+        return next(new ErrorHandler("Sign in with Email as your account is not linked with Google."));
+    } else {
+        const googleAcc = await GoogleUser.findOne({ email });
+        if (!googleAcc) {
+            const user = new GoogleUser({ name, email, imageUrl });
+            const newGUser = await user.save();
+            sendJWT(newGUser, req, res);
+        } else {
+            sendJWT(googleAcc, req, res);
+        }
+    }
 })
 
 

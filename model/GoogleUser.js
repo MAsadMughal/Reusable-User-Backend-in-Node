@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 mongoose.set('strictQuery', false);
 
 
-const userSchema = new mongoose.Schema({
+const googleUserSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -14,10 +14,10 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
-    password: {
+    imageUrl: {
         type: String,
         required: true,
-        select: false,
+        unique: true,
     },
     date: {
         type: Date,
@@ -27,18 +27,9 @@ const userSchema = new mongoose.Schema({
 });
 
 
-userSchema.pre('save', async function (next) {
-    if (!this.isModified("password")) {
-        next();
-    }
-    this.password = await bcrypt.hash(this.password, 10);
-});
-
-
-
 
 // Method for generating JWT
-userSchema.methods.getJWTtoken = function () {
+googleUserSchema.methods.getJWTtoken = function () {
 
     // Create a secret
     const secret = 'mysecretkey';
@@ -50,6 +41,6 @@ userSchema.methods.getJWTtoken = function () {
     return jwt.sign({ id: this._id }, secret, options);
 };
 
-const User = mongoose.model("User", userSchema);
+const GoogleUser = mongoose.model("GoogleUser", googleUserSchema);
 
-module.exports = User;
+module.exports = GoogleUser;
